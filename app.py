@@ -11,63 +11,105 @@ st.set_page_config(
 # 明朝体および見やすいレイアウト用カスタムCSS
 st.markdown("""
 <style>
+  /* 全体の背景と基本文字色を強制的に固定（ダークモード干渉を防止） */
+  .stApp {
+    background-color: #f8fafc !important; /* 明るい清潔な背景色 */
+    color: #111827 !important; /* 極濃テキスト */
+  }
+
+  /* フォント指定：明朝体 */
   * {
     font-family: "Hiragino Mincho ProN", "Yu Mincho", "MS Mincho", "Source Han Serif", serif !important;
   }
-  ruby { ruby-align: center; }
-  rt { font-size: 0.55em; font-weight: normal; line-height: 1; }
+
+  /* 一般テキスト、見出し、ラジオボタンの文字色をくっきり黒に固定 */
+  h1, h2, h3, h4, p, span, label, div {
+    color: #0f172a !important;
+  }
+
+  /* ルビ（ふりがな）の視認性向上 */
+  ruby {
+    ruby-align: center;
+    color: #000000 !important;
+    font-weight: 500;
+  }
+  rt {
+    font-size: 0.65em !important; /* 少し大きくして潰れを防止 */
+    font-weight: bold !important;  /* 細くかすれないよう太字化 */
+    color: #1e3a8a !important;    /* ふりがなを視認しやすい濃紺色に設定 */
+    line-height: 1.2 !important;
+  }
+
+  /* 学生情報入力ボックス */
   .student-box {
-    background: #f8fafc;
-    border: 2px solid #cbd5e1;
+    background-color: #ffffff !important;
+    border: 2px solid #475569 !important;
     border-radius: 8px;
     padding: 16px 18px;
     margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   }
+
+  /* ナビゲーションボックス */
   .nav-box {
-    background: #f1f5f9;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    padding: 10px 14px;
+    background-color: #ffffff !important;
+    border: 2px solid #64748b !important;
+    border-radius: 8px;
+    padding: 12px 16px;
     margin-bottom: 18px;
   }
+
+  /* 問題カード：白背景にくっきりした濃色の枠線 */
   .q-card {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 14px 16px;
+    background-color: #ffffff !important;
+    border: 1.5px solid #64748b !important; /* 枠線を濃くして境界を明瞭化 */
+    border-radius: 8px;
+    padding: 16px 18px;
     margin-bottom: 16px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
   }
+
+  /* 問題文タイトル：純黒・太字 */
   .q-title {
-    font-size: 1.02rem;
-    font-weight: bold;
-    margin-bottom: 8px;
-    color: #0f172a;
-    line-height: 1.6;
+    font-size: 1.05rem !important;
+    font-weight: bold !important;
+    margin-bottom: 10px;
+    color: #000000 !important;
+    line-height: 1.7;
   }
+
+  /* 選択肢テキスト：視認性の高い濃色 */
   .opt-item {
     margin-left: 18px;
-    font-size: 0.93rem;
-    margin-bottom: 4px;
-    line-height: 1.5;
+    font-size: 0.96rem !important;
+    margin-bottom: 6px;
+    line-height: 1.6;
+    color: #111827 !important;
+    font-weight: 500;
   }
+
+  /* 入力欄（テキスト入力・ラジオボタン）自体の文字色も強制黒化 */
+  .stTextInput input {
+    color: #000000 !important;
+    background-color: #ffffff !important;
+    border: 1.5px solid #64748b !important;
+  }
+  
+  /* ラジオボタン選択肢の文字 */
+  div[role="radiogroup"] label p {
+    color: #000000 !important;
+    font-size: 1rem !important;
+    font-weight: bold !important;
+  }
+
+  /* 採点バナー */
   .score-badge {
     text-align: center;
-    background: #eff6ff;
-    border: 2px solid #3b82f6;
+    background-color: #e0f2fe !important;
+    border: 2px solid #0284c7 !important;
     border-radius: 8px;
     padding: 18px;
     margin: 20px 0;
-  }
-  .tag {
-    display: inline-block;
-    background: #e0f2fe;
-    color: #0369a1;
-    font-size: 0.8rem;
-    padding: 2px 8px;
-    border-radius: 4px;
-    margin-bottom: 6px;
-    font-weight: bold;
   }
 </style>
 """, unsafe_allow_html=True)
