@@ -80,7 +80,7 @@ with col1:
 with col2:
     s_id = st.text_input("学籍番号", placeholder='例"9259999"')
 with col3:
-    s_name = st.text_input("名前（氏名）", placeholder='例"ヤグラ タロウ"')
+    s_name = st.text_input("名前（ニックネーム）", placeholder='例"Your nickname"')
 st.markdown("</div>", unsafe_allow_html=True)
 
 # 問題データ定義（全70問）
