@@ -1,5 +1,6 @@
 import streamlit as st
 import datetime
+import re
 
 # ページ基本設定
 st.set_page_config(
@@ -8,7 +9,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# 明朝体および見やすいレイアウト用カスタムCSS
+# 明朝体および見やすい高コントラスト・アイコン保護用カスタムCSS
 st.markdown("""
 <style>
   /* 全体の背景と基本文字色を強制的に固定（ダークモード干渉を防止） */
@@ -17,17 +18,49 @@ st.markdown("""
     color: #111827 !important; /* 極濃テキスト */
   }
 
-  /* フォント指定：明朝体 */
-  * {
+  /* フォント指定：明朝体（※アイコンフォントやSVGタグは除外） */
+  html, body, [data-testid="stAppViewContainer"], .stMarkdown, p, h1, h2, h3, h4, h5, h6, label, input, textarea, select {
     font-family: "Hiragino Mincho ProN", "Yu Mincho", "MS Mincho", "Source Han Serif", serif !important;
   }
 
+  /* Streamlitのシステムアイコン（アコーディオンの矢印「.arrow_right」等の文字化け・重複表示を完全に防止） */
+  [data-testid*="Icon"],
+  [data-testid*="icon"],
+  [data-testid="stExpanderToggleIcon"],
+  .material-symbols-rounded,
+  .material-symbols-outlined,
+  .material-icons,
+  [class*="material-symbols"],
+  [class*="material-icons"] {
+    font-family: "Material Symbols Rounded", "Material Icons", sans-serif !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+    display: inline-block !important;
+    white-space: nowrap !important;
+    word-wrap: normal !important;
+    direction: ltr !important;
+  }
+
+  /* expander ヘッダーのレイアウト崩れ・文字重なり防止 */
+  summary[data-testid="stExpanderSummary"] {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+  summary[data-testid="stExpanderSummary"] p {
+    margin: 0 !important;
+    font-weight: bold !important;
+    color: #1e3a8a !important;
+  }
+
   /* 一般テキスト、見出し、ラジオボタンの文字色をくっきり黒に固定 */
-  h1, h2, h3, h4, p, span, label, div {
+  h1, h2, h3, h4, p, span:not([data-testid*="Icon"]):not(.material-symbols-rounded), label, div {
     color: #0f172a !important;
   }
 
-  /* ルビ（ふりがな）の視認性向上 */
+  /* ルビ（ふりがな）の視認性向上（濃紺・太字・少し拡大） */
   ruby {
     ruby-align: center;
     color: #000000 !important;
@@ -57,6 +90,18 @@ st.markdown("""
     border-radius: 8px;
     padding: 12px 16px;
     margin-bottom: 18px;
+  }
+
+  /* 単元タグバッジ */
+  .tag {
+    display: inline-block;
+    background-color: #e2e8f0;
+    color: #1e293b !important;
+    font-size: 0.8rem;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 8px;
   }
 
   /* 問題カード：白背景にくっきりした濃色の枠線 */
@@ -133,10 +178,17 @@ with col1:
 with col2:
     s_id = st.text_input("学籍番号", placeholder='例"9259999"')
 with col3:
-    s_name = st.text_input("名前（ニックネーム）", placeholder='例"Your nickname"')
+    s_name = st.text_input("名前（氏名）", placeholder='例"ヤグラ タロウ"')
 st.markdown("</div>", unsafe_allow_html=True)
 
-# 全70問のデータ
+# ルビ除去用補助関数
+def remove_ruby(text):
+    if not text:
+        return ""
+    text_clean = re.sub(r'<rt>.*?</rt>', '', text)
+    text_clean = re.sub(r'</?ruby>', '', text_clean)
+    return text_clean
+
 QUESTIONS = [
   {
     "id": 1,
@@ -1050,6 +1102,7 @@ QUESTIONS = [
   }
 ]
 
+# 単元定義
 SECTIONS = {
     "all": "全70問を一括表示（模擬試験モード）",
     "sec1": "第1単元: 発達心理学からみた人間関係（問1〜12）",
@@ -1060,14 +1113,29 @@ SECTIONS = {
     "sec6": "第6単元: 組織におけるコミュニケーション（問61〜70）"
 }
 
+# 提出ファイル名・レポート用識別記号マッピング
+TAG_MAP = {
+    "all": "[ALL_全70問]",
+    "sec1": "[B1_問01-12]",
+    "sec2": "[B2_問13-24]",
+    "sec3": "[B3_問25-36]",
+    "sec4": "[B4_問37-48]",
+    "sec5": "[B5_問49-60]",
+    "sec6": "[B6_問61-70]"
+}
+
 # 2. 出題ナビゲーション
 st.markdown("<div class='nav-box'>", unsafe_allow_html=True)
 st.markdown("### 🎯 出題モードの選択")
-view_mode = st.selectbox(
-    "取り組み方を選択してください（切り替えても回答内容は保持されます）:",
-    options=list(SECTIONS.keys()),
-    format_func=lambda x: SECTIONS[x]
-)
+c_nav1, c_nav2 = st.columns([2.5, 1.5])
+with c_nav1:
+    view_mode = st.selectbox(
+        "取り組み方を選択してください（切り替えても回答内容は保持されます）:",
+        options=list(SECTIONS.keys()),
+        format_func=lambda x: SECTIONS[x]
+    )
+with c_nav2:
+    show_ruby = st.checkbox("ふりがな（ルビ）を表示する", value=True)
 st.markdown("</div>", unsafe_allow_html=True)
 
 # 表示対象の問題をフィルタリング
@@ -1094,19 +1162,22 @@ if "answers" not in st.session_state:
 answered_count = len([k for k, v in st.session_state.answers.items() if v is not None])
 progress_pct = int((answered_count / 70) * 100)
 st.progress(answered_count / 70)
-st.caption(f"現在の解答状況: **{answered_count} / 70 問 解答済み** ({progress_pct}%)")
+st.caption(f"現在の全体の解答状況: **{answered_count} / 70 問 解答済み** ({progress_pct}%)")
 
 st.markdown(f"### ✍️ 問題一覧（{SECTIONS[view_mode]}：{len(display_questions)} 問）")
 
 # 問題のレンダリング
 for q in display_questions:
     q_id = q["id"]
+    stem_txt = q["stem"] if show_ruby else remove_ruby(q["stem"])
+    
     st.markdown("<div class='q-card'>", unsafe_allow_html=True)
     st.markdown(f"<span class='tag'>{q['section']}</span>", unsafe_allow_html=True)
-    st.markdown(f"<div class='q-title'>問 {q_id}. {q['stem']}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='q-title'>問 {q_id}. {stem_txt}</div>", unsafe_allow_html=True)
     
     for opt_idx, opt in enumerate(q["options"]):
-        st.markdown(f"<div class='opt-item'>{opt_idx + 1}. {opt}</div>", unsafe_allow_html=True)
+        opt_txt = opt if show_ruby else remove_ruby(opt)
+        st.markdown(f"<div class='opt-item'>{opt_idx + 1}. {opt_txt}</div>", unsafe_allow_html=True)
         
     current_val = st.session_state.answers.get(q_id, None)
     selected = st.radio(
@@ -1122,15 +1193,23 @@ for q in display_questions:
 
 # 採点と提出
 st.markdown("---")
-if st.button("📊 全70問を採点して提出用テキストを作成する", type="primary", use_container_width=True):
+current_tag = TAG_MAP[view_mode]
+current_range_title = SECTIONS[view_mode]
+
+button_label = "📊 全70問を採点して提出用テキストを作成する" if view_mode == "all" else f"📊 {current_range_title}（{len(display_questions)}問）を採点して提出用テキストを作成する"
+
+if st.button(button_label, type="primary", use_container_width=True):
     if not s_class.strip() or not s_id.strip() or not s_name.strip():
         st.error("⚠️ 最上部の「クラス名」「学籍番号」「名前」をすべて入力してください。")
     else:
+        # 現在の対象範囲に対する採点
         score = 0
         unanswered = 0
         detail_lines = []
         
-        for q in QUESTIONS:
+        target_scope = QUESTIONS if view_mode == "all" else display_questions
+        
+        for q in target_scope:
             q_id = q["id"]
             u_ans = st.session_state.answers.get(q_id, None)
             is_correct = (u_ans == q["answer"])
@@ -1149,61 +1228,66 @@ if st.button("📊 全70問を採点して提出用テキストを作成する",
                 
             detail_lines.append(f"問{q_id:02d} [{q['section']}]: あなたの回答 [{ans_str}] / 正解 [{q['answer']}] -> {status_str}")
             
-        total_q = len(QUESTIONS)
+        total_q = len(target_scope)
         pct = round((score / total_q) * 100)
         
         st.markdown(f"""
         <div class='score-badge'>
-          <h3 style='margin:0 0 8px 0; color:#1e3a8a;'>採点結果（全70問）</h3>
+          <h3 style='margin:0 0 8px 0; color:#1e3a8a;'>採点結果（{current_range_title}）</h3>
           <div style='font-size: 2.2rem; font-weight: bold; color: #1e3a8a;'>{score} / {total_q} 点</div>
-          <div style='font-size: 1.1rem; color: #475569;'>正答率: <strong>{pct}%</strong></div>
+          <div style='font-size: 1.1rem; color: #475569;'>正答率: <strong>{pct}%</strong> （全体進捗: {answered_count} / 70問 完了）</div>
         </div>
         """, unsafe_allow_html=True)
         
         if unanswered > 0:
-            st.warning(f"※ 未回答の問題が {unanswered} 問あります。")
+            st.warning(f"※ 対象範囲内に未回答の問題が {unanswered} 問あります。")
             
+        # 解説アコーディオン（arrow_rightの文字化け・重なりをCSSで完全防止）
         with st.expander("📖 各問題の解説を確認する"):
-            for q in QUESTIONS:
+            for q in target_scope:
                 st.markdown(f"**問 {q['id']}. [{q['section']}]**")
-                st.markdown(f"・{q['exp']}", unsafe_allow_html=True)
+                exp_txt = q['exp'] if show_ruby else remove_ruby(q['exp'])
+                st.markdown(f"・{exp_txt}", unsafe_allow_html=True)
                 st.markdown("---")
                 
         now = datetime.datetime.now()
         timestamp = now.strftime("%Y年%m月%d日 %H:%M:%S")
-        auth_raw = f"{s_class}_{s_id}_{s_name}_{score}_{total_q}_{timestamp}"
-        auth_code = f"VER-C2B70-{abs(hash(auth_raw)):X}-{now.strftime('%f')}"
+        auth_raw = f"{s_class}_{s_id}_{s_name}_{score}_{total_q}_{current_tag}_{timestamp}"
+        auth_code = f"VER-B70-{current_tag}-{abs(hash(auth_raw)):X}-{now.strftime('%f')}"
         
         details_block = "\n".join(detail_lines)
         report_text = (
             "==================================================\n"
-            "【課題提出用 成績レポート（全70問）】\n"
+            "【課題提出用 成績レポート】\n"
             "教科・単元　：人間関係とコミュニケーション b後半\n"
+            f"実施範囲　　：{current_range_title} 【識別記号: {current_tag}】\n"
             f"クラス名（組）：{s_class.strip()}\n"
             f"学籍番号　　：{s_id.strip()}\n"
             f"名前（氏名）：{s_name.strip()}\n"
             f"実施日時　　：{timestamp}\n"
             f"得点　　　　：{score} / {total_q} 点（正答率 {pct}%）\n"
+            f"全体進捗　　：{answered_count} / 70 問 解答済み\n"
             f"改ざん防止用認証コード：{auth_code}\n"
             "==================================================\n"
-            "【全70問の解答記録】\n"
+            f"【{current_tag} 解答記録】\n"
             f"{details_block}\n"
             "==================================================\n"
             "以上を提出内容として記録しました。\n"
         )
         
         st.markdown("### 📥 課題の提出方法（2通りの方法が使えます）")
-        st.info("""
+        st.info(f"""
 **【提出方法A：テキストファイルをダウンロードして提出】**
 1. すぐ下の **「📥 提出用テキストファイル（.txt）をダウンロード」** ボタンを押してファイルを端末に保存します。
 2. Google Classroom の該当課題ページで **「ファイルの添付」** から保存したテキストファイルを提出してください。
+※ファイル名に選択した範囲の識別記号 **{current_tag}** が自動付与されています。
 
 **【提出方法B：テキストをコピー＆ペーストして提出】**
 1. さらに下にある **「📋 コピーペースト用提出テキスト」** の枠内をクリックし、すべて選択（Ctrl+A / ⌘+A）してコピーします。
 2. Google Classroom の回答欄・コメント欄にそのまま貼り付けて提出してください。
 """)
         
-        file_name = f"提出用_人間関係とコミュニケーションb後半_70問_{s_class.strip()}_{s_id.strip()}_{s_name.strip()}.txt"
+        file_name = f"提出用_人間関係とコミュニケーションb後半_{current_tag}_{s_class.strip()}_{s_id.strip()}_{s_name.strip()}.txt"
         st.download_button(
             label="📥 提出用テキストファイル（.txt）をダウンロード",
             data=report_text,
